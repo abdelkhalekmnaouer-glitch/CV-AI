@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import requests
+from xhtml2pdf import pisa
 from io import BytesIO
 
 st.title("Générateur CV Intelligent")
@@ -21,66 +22,28 @@ if st.button("Générer CV"):
     }
 
     prompt = f"""
-Tu es expert en optimisation ATS pour ingénieur mécanique.
+Tu es expert ATS pour ingénieur mécanique.
 
-OBJECTIF :
-Adapter uniquement :
-- Phrase d'accroche (hook)
-- Profil
-- Compétences
-
-Ne modifier aucune autre section.
-
-RÈGLES IMPORTANTES :
-
-1) HOOK :
-- Doit commencer par : "Candidat Stage PFE en"
-- Maximum 20 mots
+Règles :
+- Hook commence par "Candidat Stage PFE en"
+- Max 20 mots
 - Ton technique
-- Pas marketing
-- Pas de phrase entreprise
-
-2) PROFIL :
-- Paragraphe unique
-- Conserver l'identité mécanique / FEA / simulation
-- Intégrer les mots-clés pertinents
-- Ne pas transformer en annonce RH
-
-3) COMPÉTENCES :
-- Ne jamais supprimer les compétences existantes
-- Ne jamais répéter une compétence déjà existante
-- Si une compétence existe déjà (ex : FEA = MEF), ne pas la réécrire
-- Fusionner sans duplication
-- Conserver absolument :
-    - FEA / MEF
-    - Analyse statique et dynamique
-    - NVH
-    - Abaqus / ANSYS / NASTRAN
-    - Python / MATLAB
-- Ajouter uniquement les compétences pertinentes de l’offre
-
-4) Éviter les doublons sémantiques :
-Exemples :
-- FEA = MEF
-- CATIA V5 déjà présent → ne pas répéter
-- Python déjà présent → ne pas répéter
+- Conserver FEA, MEF, NVH, Abaqus, ANSYS, Python
+- Ajouter compétences pertinentes sans duplication
 
 Offre :
 {offer}
 
-Retourner STRICTEMENT ce JSON :
-
+Retourner JSON strict :
 {{
-  "hook": "Candidat Stage PFE en ...",
-  "profile": "Paragraphe professionnel adapté",
+  "hook": "...",
+  "profile": "...",
   "skills": {{
-      "Analyse Structurale et Simulation": ["..."],
-      "Logiciels de Simulation": ["..."],
-      "Programmation et Outils": ["..."]
+      "Analyse Structurale et Simulation": [...],
+      "Logiciels de Simulation": [...],
+      "Programmation et Outils": [...]
   }}
 }}
-
-Ne rien écrire avant ou après le JSON.
 """
 
     data = {
@@ -95,55 +58,64 @@ Ne rien écrire avant ou après le JSON.
         json=data
     )
 
-    if response.status_code != 200:
-        st.error("Erreur API Groq")
-        st.write(response.text)
-        st.stop()
-
     result = response.json()
-
-    if "choices" not in result:
-        st.error("Réponse inattendue de Groq")
-        st.write(result)
-        st.stop()
-
     content = result["choices"][0]["message"]["content"]
+    result_json = json.loads(content)
 
-    try:
-        result_json = json.loads(content)
-    except:
-        st.error("Le modèle n'a pas renvoyé un JSON valide.")
-        st.write(content)
-        st.stop()
+    # =====================
+    # TEMPLATE HTML
+    # =====================
 
-    # ======================
-    # GÉNÉRATION FICHIER TEXTE STABLE
-    # ======================
+    html = f"""
+    <html>
+    <head>
+        <style>
+            body {{
+                font-family: Arial;
+                margin: 40px;
+            }}
+            h1 {{
+                font-size: 24px;
+                margin-bottom: 5px;
+            }}
+            h2 {{
+                margin-top: 25px;
+                border-bottom: 1px solid black;
+                font-size: 16px;
+            }}
+            ul {{
+                margin-top: 5px;
+            }}
+        </style>
+    </head>
+    <body>
 
-    cv_text = f"""
-ABDELKHALEK MNAOUER
+    <h1>ABDELKHALEK MNAOUER</h1>
+    <p>{result_json["hook"]}</p>
 
-{result_json["hook"]}
+    <h2>PROFIL</h2>
+    <p>{result_json["profile"]}</p>
 
-PROFIL
-{result_json["profile"]}
-
-COMPÉTENCES
-"""
+    <h2>COMPÉTENCES</h2>
+    """
 
     for category, items in result_json["skills"].items():
-        cv_text += f"\n{category}\n"
+        html += f"<h3>{category}</h3><ul>"
         for item in items:
-            cv_text += f"- {item}\n"
+            html += f"<li>{item}</li>"
+        html += "</ul>"
 
-    buffer = BytesIO()
-    buffer.write(cv_text.encode("utf-8"))
-    buffer.seek(0)
+    html += "</body></html>"
+
+    # =====================
+    # CONVERSION PDF
+    # =====================
+
+    pdf_buffer = BytesIO()
+    pisa.CreatePDF(html, dest=pdf_buffer)
 
     st.download_button(
         "Télécharger le CV",
-        buffer,
-        file_name="CV_MNAOUER_Abdelkhalek.txt"
+        pdf_buffer.getvalue(),
+        file_name="CV_MNAOUER_Abdelkhalek.pdf"
     )
-
-
