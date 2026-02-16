@@ -1,7 +1,7 @@
 import streamlit as st
 import subprocess
 import json
-from groq import Groq
+import requests
 
 st.title("Générateur CV Intelligent")
 
@@ -9,7 +9,12 @@ offer = st.text_area("Collez l'offre de stage ici")
 
 if st.button("Générer CV"):
 
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    api_key = st.secrets["GROQ_API_KEY"]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
 
     prompt = f"""
     Adapter uniquement :
@@ -35,27 +40,36 @@ if st.button("Générer CV"):
     }}
     """
 
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[{"role": "user", "content": prompt}],
+    data = {
+        "model": "llama3-8b-8192",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=data
     )
 
-    result = json.loads(response.choices[0].message.content)
+    result = response.json()
+    content = result["choices"][0]["message"]["content"]
+    result_json = json.loads(content)
 
     with open("template.tex", "r", encoding="utf-8") as f:
         template = f.read()
 
-    template = template.replace("<<HOOK>>", result["hook"])
-    template = template.replace("<<PROFILE>>", result["profile"])
+    template = template.replace("<<HOOK>>", result_json["hook"])
+    template = template.replace("<<PROFILE>>", result_json["profile"])
 
     skills_block = ""
-
-    for category, items in result["skills"].items():
+    for category, items in result_json["skills"].items():
         skills_block += f"\\noindent \\textbf{{{category}}}\n"
-        skills_block += "\\begin{{itemize}}\n"
+        skills_block += "\\begin{itemize}\n"
         for item in items:
             skills_block += f"\\item {item}\n"
-        skills_block += "\\end{{itemize}}\n\n"
+        skills_block += "\\end{itemize}\n\n"
 
     template = template.replace("<<SKILLS_BLOCK>>", skills_block)
 
