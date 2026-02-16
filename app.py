@@ -21,37 +21,45 @@ if st.button("Générer CV"):
     }
 
     prompt = f"""
-Tu es un expert en optimisation ATS.
-
-Adapter uniquement :
-- Phrase d'accroche (HOOK)
-- Profil
-- Compétences
+Tu es expert en optimisation ATS pour ingénieur mécanique.
 
 IMPORTANT :
-- "hook" doit être UNE phrase simple.
-- "profile" doit être UN paragraphe simple.
-- Ne jamais renvoyer d'objet imbriqué.
-- Les valeurs doivent être des chaînes ou listes simples.
-
-Ne modifier aucune autre section.
+- Ne jamais supprimer les compétences existantes du candidat.
+- Ajouter uniquement les compétences pertinentes de l’offre.
+- Conserver son socle technique (FEA, MEF, NVH, Abaqus, ANSYS, etc.).
+- Fusionner intelligemment les compétences existantes + celles de l’offre.
+- Ne jamais transformer le profil en annonce RH.
+- Le hook doit être professionnel, orienté candidature, pas marketing.
 
 Offre :
 {offer}
 
-Retourner STRICTEMENT ce format JSON :
+Générer STRICTEMENT ce JSON :
 
 {{
-  "hook": "phrase simple",
-  "profile": "paragraphe simple",
+  "hook": "Phrase d'accroche professionnelle adaptée à l'offre",
+  "profile": "Paragraphe professionnel cohérent conservant l'identité mécanique et simulation du candidat, en intégrant les mots-clés de l'offre",
   "skills": {{
-      "Analyse Structurale et Simulation": ["...", "..."],
-      "Logiciels de Simulation": ["...", "..."],
-      "Programmation et Outils": ["...", "..."]
+      "Analyse Structurale et Simulation": [
+          "Conserver compétences existantes + ajouter pertinentes"
+      ],
+      "Logiciels de Simulation": [
+          "Conserver existant + ajouter CATIA V5 si pertinent"
+      ],
+      "Programmation et Outils": [
+          "Conserver Python, MATLAB etc + ajouter VB.NET si pertinent"
+      ]
   }}
 }}
 
-Ne rien ajouter avant ou après le JSON.
+Ne jamais supprimer :
+- FEA / MEF
+- Analyse statique/dynamique
+- NVH
+- Abaqus / ANSYS / Nastran
+- Python
+
+Ne rien écrire avant ou après le JSON.
 """
 
     data = {
@@ -116,3 +124,4 @@ COMPÉTENCES
         buffer,
         file_name="CV_MNAOUER_Abdelkhalek.txt"
     )
+
