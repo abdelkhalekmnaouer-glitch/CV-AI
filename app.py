@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import requests
 
+st.set_page_config(layout="centered")
 st.title("Générateur CV Intelligent")
 
 offer = st.text_area("Collez l'offre de stage ici")
@@ -67,7 +68,7 @@ Retourner JSON strict :
     result_json = json.loads(content)
 
     # ======================
-    # TEMPLATE HTML
+    # DESIGN HTML PROFESSIONNEL
     # ======================
 
     html = f"""
@@ -75,46 +76,68 @@ Retourner JSON strict :
     <head>
         <style>
             body {{
-                font-family: Arial;
-                margin: 50px;
+                font-family: Arial, sans-serif;
+                margin: 40px;
+                line-height: 1.5;
             }}
-            h1 {{
+            .header {{
+                text-align: center;
+                margin-bottom: 20px;
+            }}
+            .name {{
                 font-size: 22px;
-                margin-bottom: 5px;
+                font-weight: bold;
             }}
-            h2 {{
-                border-bottom: 1px solid black;
-                font-size: 16px;
+            .hook {{
+                font-size: 14px;
+                margin-top: 5px;
+            }}
+            .section {{
                 margin-top: 25px;
             }}
+            .section-title {{
+                font-weight: bold;
+                border-bottom: 1px solid #000;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }}
             ul {{
-                margin-top: 5px;
+                margin: 5px 0 10px 15px;
             }}
         </style>
     </head>
     <body>
 
-    <h1>ABDELKHALEK MNAOUER</h1>
-    <p>{result_json["hook"]}</p>
+    <div class="header">
+        <div class="name">ABDELKHALEK MNAOUER</div>
+        <div class="hook">{result_json["hook"]}</div>
+    </div>
 
-    <h2>PROFIL</h2>
-    <p>{result_json["profile"]}</p>
+    <div class="section">
+        <div class="section-title">PROFIL</div>
+        <div>{result_json["profile"]}</div>
+    </div>
 
-    <h2>COMPÉTENCES</h2>
+    <div class="section">
+        <div class="section-title">COMPÉTENCES</div>
     """
 
     for category, items in result_json["skills"].items():
-        html += f"<h3>{category}</h3><ul>"
+        html += f"<strong>{category}</strong><ul>"
         for item in items:
             html += f"<li>{item}</li>"
         html += "</ul>"
 
-    html += "</body></html>"
+    html += """
+    </div>
+    </body>
+    </html>
+    """
 
-    st.components.v1.html(html, height=600, scrolling=True)
+    st.components.v1.html(html, height=700, scrolling=True)
 
     st.download_button(
-        "Télécharger en HTML (exportable en PDF)",
+        "Télécharger en HTML (Exporter ensuite en PDF via Ctrl+P)",
         html,
         file_name="CV_MNAOUER_Abdelkhalek.html"
     )
