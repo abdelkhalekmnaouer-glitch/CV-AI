@@ -22,17 +22,29 @@ if st.button("Générer le code LaTeX"):
     prompt = f"""
 Tu es expert ATS pour ingénieur mécanique.
 
-Règles :
-- Hook commence par "Candidat Stage PFE en"
-- Max 20 mots
+RÈGLES IMPORTANTES :
+
+1) Hook :
+- Commence par "Candidat Stage PFE en"
+- Maximum 20 mots
 - Ton technique
-- Conserver FEA, MEF, NVH, Abaqus, ANSYS, Python
-- Ajouter compétences pertinentes sans duplication
+- Pas marketing
+
+2) Profil :
+- Paragraphe professionnel
+- Conserver identité mécanique / FEA / simulation
+
+3) Compétences :
+- Ne jamais supprimer les compétences existantes
+- Ajouter uniquement les nouvelles pertinentes
+- Ne pas répéter une compétence déjà existante
+- Pas de doublon sémantique
 
 Offre :
 {offer}
 
 Retourner JSON strict :
+
 {{
   "hook": "...",
   "profile": "...",
@@ -64,27 +76,47 @@ Retourner JSON strict :
         st.stop()
 
     content = result["choices"][0]["message"]["content"]
-    result_json = json.loads(content)
+
+    try:
+        result_json = json.loads(content)
+    except:
+        st.error("Erreur parsing JSON")
+        st.write(content)
+        st.stop()
 
     # ======================
-    # Injection dans template
+    # Injection dans template LaTeX
     # ======================
 
     with open("template.tex", "r", encoding="utf-8") as f:
         template = f.read()
 
-    # Construire bloc compétences LaTeX
-    skills_block = ""
-    for category, items in result_json["skills"].items():
-        skills_block += f"\\noindent \\textbf{{{category}}}\n"
-        skills_block += "\\begin{itemize}\n"
-        for item in items:
-            skills_block += f"\\item {item}\n"
-        skills_block += "\\end{itemize}\n\n"
+    def unique_items(items):
+        return list(dict.fromkeys(items))
+
+    def build_items(items):
+        latex_items = ""
+        for item in unique_items(items):
+            latex_items += f"\\item {item}\n"
+        return latex_items
+
+    add_structural = build_items(
+        result_json["skills"].get("Analyse Structurale et Simulation", [])
+    )
+
+    add_software = build_items(
+        result_json["skills"].get("Logiciels de Simulation", [])
+    )
+
+    add_programming = build_items(
+        result_json["skills"].get("Programmation et Outils", [])
+    )
 
     final_latex = template.replace("<<HOOK>>", result_json["hook"])
     final_latex = final_latex.replace("<<PROFILE>>", result_json["profile"])
-    final_latex = final_latex.replace("<<SKILLS_BLOCK>>", skills_block)
+    final_latex = final_latex.replace("<<ADD_STRUCTURAL>>", add_structural)
+    final_latex = final_latex.replace("<<ADD_SOFTWARE>>", add_software)
+    final_latex = final_latex.replace("<<ADD_PROGRAMMING>>", add_programming)
 
     st.subheader("Code LaTeX généré")
     st.code(final_latex, language="latex")
