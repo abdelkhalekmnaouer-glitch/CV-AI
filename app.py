@@ -45,7 +45,7 @@ if st.button("Générer CV"):
     """
 
     data = {
-        "model": "llama-3.1-70b-versatile",
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {"role": "user", "content": prompt}
         ]
@@ -107,4 +107,5 @@ COMPÉTENCES
         buffer,
         file_name="CV_MNAOUER_Abdelkhalek.txt"
     )
+
 
