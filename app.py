@@ -1,7 +1,7 @@
 import streamlit as st
 import subprocess
 import json
-from openai import OpenAI
+from groq import Groq
 
 st.title("Générateur CV Intelligent")
 
@@ -9,7 +9,7 @@ offer = st.text_area("Collez l'offre de stage ici")
 
 if st.button("Générer CV"):
 
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
     prompt = f"""
     Adapter uniquement :
@@ -36,7 +36,7 @@ if st.button("Générer CV"):
     """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="llama3-8b-8192",
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -52,10 +52,10 @@ if st.button("Générer CV"):
 
     for category, items in result["skills"].items():
         skills_block += f"\\noindent \\textbf{{{category}}}\n"
-        skills_block += "\\begin{itemize}\n"
+        skills_block += "\\begin{{itemize}}\n"
         for item in items:
             skills_block += f"\\item {item}\n"
-        skills_block += "\\end{itemize}\n\n"
+        skills_block += "\\end{{itemize}}\n\n"
 
     template = template.replace("<<SKILLS_BLOCK>>", skills_block)
 
