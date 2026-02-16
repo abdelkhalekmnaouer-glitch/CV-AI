@@ -1,13 +1,22 @@
 import streamlit as st
-import subprocess
 import json
 import requests
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
 
 st.title("Générateur CV Intelligent")
 
 offer = st.text_area("Collez l'offre de stage ici")
 
 if st.button("Générer CV"):
+
+    if not offer.strip():
+        st.warning("Veuillez coller une offre.")
+        st.stop()
 
     api_key = st.secrets["GROQ_API_KEY"]
 
@@ -53,35 +62,64 @@ if st.button("Générer CV"):
         json=data
     )
 
+    if response.status_code != 200:
+        st.error("Erreur API Groq")
+        st.write(response.text)
+        st.stop()
+
     result = response.json()
+
+    if "choices" not in result:
+        st.error("Réponse inattendue de Groq")
+        st.write(result)
+        st.stop()
+
     content = result["choices"][0]["message"]["content"]
-    result_json = json.loads(content)
 
-    with open("template.tex", "r", encoding="utf-8") as f:
-        template = f.read()
+    try:
+        result_json = json.loads(content)
+    except:
+        st.error("Erreur JSON généré par le modèle")
+        st.write(content)
+        st.stop()
 
-    template = template.replace("<<HOOK>>", result_json["hook"])
-    template = template.replace("<<PROFILE>>", result_json["profile"])
+    # =====================
+    # GÉNÉRATION PDF PYTHON
+    # =====================
 
-    skills_block = ""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    normal = styles["Normal"]
+    title_style = styles["Heading1"]
+
+    elements.append(Paragraph("ABDELKHALEK MNAOUER", title_style))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph(result_json["hook"], normal))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>PROFIL</b>", normal))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(result_json["profile"], normal))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>COMPÉTENCES</b>", normal))
+    elements.append(Spacer(1, 6))
+
     for category, items in result_json["skills"].items():
-        skills_block += f"\\noindent \\textbf{{{category}}}\n"
-        skills_block += "\\begin{itemize}\n"
-        for item in items:
-            skills_block += f"\\item {item}\n"
-        skills_block += "\\end{itemize}\n\n"
+        elements.append(Paragraph(f"<b>{category}</b>", normal))
+        elements.append(Spacer(1, 4))
+        bullet_points = [ListItem(Paragraph(item, normal)) for item in items]
+        elements.append(ListFlowable(bullet_points, bulletType='bullet'))
+        elements.append(Spacer(1, 8))
 
-    template = template.replace("<<SKILLS_BLOCK>>", skills_block)
+    doc.build(elements)
 
-    with open("final.tex", "w", encoding="utf-8") as f:
-        f.write(template)
-
-    subprocess.run(["pdflatex", "final.tex"])
-
-    with open("final.pdf", "rb") as f:
-        st.download_button(
-            "Télécharger le CV",
-            f,
-            file_name="CV_MNAOUER_Abdelkhalek.pdf"
-        )
-
+    st.download_button(
+        "Télécharger le CV",
+        buffer.getvalue(),
+        file_name="CV_MNAOUER_Abdelkhalek.pdf"
+    )
