@@ -2,12 +2,11 @@ import streamlit as st
 import json
 import requests
 
-st.set_page_config(layout="centered")
-st.title("Générateur CV Intelligent")
+st.title("Générateur CV LaTeX Intelligent")
 
 offer = st.text_area("Collez l'offre de stage ici")
 
-if st.button("Générer CV"):
+if st.button("Générer le code LaTeX"):
 
     if not offer.strip():
         st.warning("Veuillez coller une offre.")
@@ -68,76 +67,30 @@ Retourner JSON strict :
     result_json = json.loads(content)
 
     # ======================
-    # DESIGN HTML PROFESSIONNEL
+    # Injection dans template
     # ======================
 
-    html = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                margin: 40px;
-                line-height: 1.5;
-            }}
-            .header {{
-                text-align: center;
-                margin-bottom: 20px;
-            }}
-            .name {{
-                font-size: 22px;
-                font-weight: bold;
-            }}
-            .hook {{
-                font-size: 14px;
-                margin-top: 5px;
-            }}
-            .section {{
-                margin-top: 25px;
-            }}
-            .section-title {{
-                font-weight: bold;
-                border-bottom: 1px solid #000;
-                margin-bottom: 8px;
-                font-size: 14px;
-            }}
-            ul {{
-                margin: 5px 0 10px 15px;
-            }}
-        </style>
-    </head>
-    <body>
+    with open("template.tex", "r", encoding="utf-8") as f:
+        template = f.read()
 
-    <div class="header">
-        <div class="name">ABDELKHALEK MNAOUER</div>
-        <div class="hook">{result_json["hook"]}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">PROFIL</div>
-        <div>{result_json["profile"]}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">COMPÉTENCES</div>
-    """
-
+    # Construire bloc compétences LaTeX
+    skills_block = ""
     for category, items in result_json["skills"].items():
-        html += f"<strong>{category}</strong><ul>"
+        skills_block += f"\\noindent \\textbf{{{category}}}\n"
+        skills_block += "\\begin{itemize}\n"
         for item in items:
-            html += f"<li>{item}</li>"
-        html += "</ul>"
+            skills_block += f"\\item {item}\n"
+        skills_block += "\\end{itemize}\n\n"
 
-    html += """
-    </div>
-    </body>
-    </html>
-    """
+    final_latex = template.replace("<<HOOK>>", result_json["hook"])
+    final_latex = final_latex.replace("<<PROFILE>>", result_json["profile"])
+    final_latex = final_latex.replace("<<SKILLS_BLOCK>>", skills_block)
 
-    st.components.v1.html(html, height=700, scrolling=True)
+    st.subheader("Code LaTeX généré")
+    st.code(final_latex, language="latex")
 
     st.download_button(
-        "Télécharger en HTML (Exporter ensuite en PDF via Ctrl+P)",
-        html,
-        file_name="CV_MNAOUER_Abdelkhalek.html"
+        "Télécharger le fichier .tex",
+        final_latex,
+        file_name="CV_MNAOUER_Abdelkhalek.tex"
     )
