@@ -23,41 +23,62 @@ if st.button("Générer CV"):
     prompt = f"""
 Tu es expert en optimisation ATS pour ingénieur mécanique.
 
-IMPORTANT :
-- Ne jamais supprimer les compétences existantes du candidat.
-- Ajouter uniquement les compétences pertinentes de l’offre.
-- Conserver son socle technique (FEA, MEF, NVH, Abaqus, ANSYS, etc.).
-- Fusionner intelligemment les compétences existantes + celles de l’offre.
-- Ne jamais transformer le profil en annonce RH.
-- Le hook doit être professionnel, orienté candidature, pas marketing.
+OBJECTIF :
+Adapter uniquement :
+- Phrase d'accroche (hook)
+- Profil
+- Compétences
+
+Ne modifier aucune autre section.
+
+RÈGLES IMPORTANTES :
+
+1) HOOK :
+- Doit commencer par : "Candidat Stage PFE en"
+- Maximum 20 mots
+- Ton technique
+- Pas marketing
+- Pas de phrase entreprise
+
+2) PROFIL :
+- Paragraphe unique
+- Conserver l'identité mécanique / FEA / simulation
+- Intégrer les mots-clés pertinents
+- Ne pas transformer en annonce RH
+
+3) COMPÉTENCES :
+- Ne jamais supprimer les compétences existantes
+- Ne jamais répéter une compétence déjà existante
+- Si une compétence existe déjà (ex : FEA = MEF), ne pas la réécrire
+- Fusionner sans duplication
+- Conserver absolument :
+    - FEA / MEF
+    - Analyse statique et dynamique
+    - NVH
+    - Abaqus / ANSYS / NASTRAN
+    - Python / MATLAB
+- Ajouter uniquement les compétences pertinentes de l’offre
+
+4) Éviter les doublons sémantiques :
+Exemples :
+- FEA = MEF
+- CATIA V5 déjà présent → ne pas répéter
+- Python déjà présent → ne pas répéter
 
 Offre :
 {offer}
 
-Générer STRICTEMENT ce JSON :
+Retourner STRICTEMENT ce JSON :
 
 {{
-  "hook": "Phrase d'accroche professionnelle adaptée à l'offre",
-  "profile": "Paragraphe professionnel cohérent conservant l'identité mécanique et simulation du candidat, en intégrant les mots-clés de l'offre",
+  "hook": "Candidat Stage PFE en ...",
+  "profile": "Paragraphe professionnel adapté",
   "skills": {{
-      "Analyse Structurale et Simulation": [
-          "Conserver compétences existantes + ajouter pertinentes"
-      ],
-      "Logiciels de Simulation": [
-          "Conserver existant + ajouter CATIA V5 si pertinent"
-      ],
-      "Programmation et Outils": [
-          "Conserver Python, MATLAB etc + ajouter VB.NET si pertinent"
-      ]
+      "Analyse Structurale et Simulation": ["..."],
+      "Logiciels de Simulation": ["..."],
+      "Programmation et Outils": ["..."]
   }}
 }}
-
-Ne jamais supprimer :
-- FEA / MEF
-- Analyse statique/dynamique
-- NVH
-- Abaqus / ANSYS / Nastran
-- Python
 
 Ne rien écrire avant ou après le JSON.
 """
@@ -124,4 +145,5 @@ COMPÉTENCES
         buffer,
         file_name="CV_MNAOUER_Abdelkhalek.txt"
     )
+
 
