@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import requests
-from xhtml2pdf import pisa
+from fpdf import FPDF
 from io import BytesIO
 
 st.title("Générateur CV Intelligent")
@@ -59,63 +59,57 @@ Retourner JSON strict :
     )
 
     result = response.json()
+
+    if "choices" not in result:
+        st.error("Erreur API")
+        st.write(result)
+        st.stop()
+
     content = result["choices"][0]["message"]["content"]
     result_json = json.loads(content)
 
-    # =====================
-    # TEMPLATE HTML
-    # =====================
+    # ======================
+    # GÉNÉRATION PDF AVEC FPDF
+    # ======================
 
-    html = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: Arial;
-                margin: 40px;
-            }}
-            h1 {{
-                font-size: 24px;
-                margin-bottom: 5px;
-            }}
-            h2 {{
-                margin-top: 25px;
-                border-bottom: 1px solid black;
-                font-size: 16px;
-            }}
-            ul {{
-                margin-top: 5px;
-            }}
-        </style>
-    </head>
-    <body>
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=10)
+    pdf.add_page()
 
-    <h1>ABDELKHALEK MNAOUER</h1>
-    <p>{result_json["hook"]}</p>
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "ABDELKHALEK MNAOUER", ln=True)
 
-    <h2>PROFIL</h2>
-    <p>{result_json["profile"]}</p>
+    pdf.set_font("Arial", "", 12)
+    pdf.multi_cell(0, 8, result_json["hook"])
+    pdf.ln(3)
 
-    <h2>COMPÉTENCES</h2>
-    """
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, "PROFIL", ln=True)
+
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(0, 8, result_json["profile"])
+    pdf.ln(3)
+
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, "COMPETENCES", ln=True)
+
+    pdf.set_font("Arial", "", 11)
 
     for category, items in result_json["skills"].items():
-        html += f"<h3>{category}</h3><ul>"
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(0, 8, category, ln=True)
+
+        pdf.set_font("Arial", "", 11)
         for item in items:
-            html += f"<li>{item}</li>"
-        html += "</ul>"
+            pdf.multi_cell(0, 6, f"- {item}")
+        pdf.ln(2)
 
-    html += "</body></html>"
-
-    # =====================
-    # CONVERSION PDF
-    # =====================
-
-    pdf_buffer = BytesIO()
-    pisa.CreatePDF(html, dest=pdf_buffer)
+    buffer = BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
 
     st.download_button(
         "Télécharger le CV",
-        pdf_buffer.getvalue(),
+        buffer,
         file_name="CV_MNAOUER_Abdelkhalek.pdf"
     )
