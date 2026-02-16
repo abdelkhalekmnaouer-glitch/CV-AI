@@ -1,11 +1,6 @@
 import streamlit as st
 import json
 import requests
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 
 st.title("Générateur CV Intelligent")
@@ -70,7 +65,7 @@ if st.button("Générer CV"):
     result = response.json()
 
     if "choices" not in result:
-        st.error("Réponse inattendue de Groq")
+        st.error("Réponse inattendue")
         st.write(result)
         st.stop()
 
@@ -79,47 +74,36 @@ if st.button("Générer CV"):
     try:
         result_json = json.loads(content)
     except:
-        st.error("Erreur JSON généré par le modèle")
+        st.error("Erreur parsing JSON")
         st.write(content)
         st.stop()
 
-    # =====================
-    # GÉNÉRATION PDF PYTHON
-    # =====================
+    # ======================
+    # GÉNÉRATION PDF SIMPLE
+    # ======================
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    elements = []
+    pdf_text = f"""
+ABDELKHALEK MNAOUER
 
-    styles = getSampleStyleSheet()
-    normal = styles["Normal"]
-    title_style = styles["Heading1"]
+{result_json["hook"]}
 
-    elements.append(Paragraph("ABDELKHALEK MNAOUER", title_style))
-    elements.append(Spacer(1, 12))
+PROFIL
+{result_json["profile"]}
 
-    elements.append(Paragraph(result_json["hook"], normal))
-    elements.append(Spacer(1, 12))
-
-    elements.append(Paragraph("<b>PROFIL</b>", normal))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(result_json["profile"], normal))
-    elements.append(Spacer(1, 12))
-
-    elements.append(Paragraph("<b>COMPÉTENCES</b>", normal))
-    elements.append(Spacer(1, 6))
+COMPÉTENCES
+"""
 
     for category, items in result_json["skills"].items():
-        elements.append(Paragraph(f"<b>{category}</b>", normal))
-        elements.append(Spacer(1, 4))
-        bullet_points = [ListItem(Paragraph(item, normal)) for item in items]
-        elements.append(ListFlowable(bullet_points, bulletType='bullet'))
-        elements.append(Spacer(1, 8))
+        pdf_text += f"\n{category}\n"
+        for item in items:
+            pdf_text += f"- {item}\n"
 
-    doc.build(elements)
+    buffer = BytesIO()
+    buffer.write(pdf_text.encode("utf-8"))
+    buffer.seek(0)
 
     st.download_button(
         "Télécharger le CV",
-        buffer.getvalue(),
-        file_name="CV_MNAOUER_Abdelkhalek.pdf"
+        buffer,
+        file_name="CV_MNAOUER_Abdelkhalek.txt"
     )
