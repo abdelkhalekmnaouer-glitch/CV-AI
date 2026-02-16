@@ -21,34 +21,43 @@ if st.button("Générer CV"):
     }
 
     prompt = f"""
-    Adapter uniquement :
-    - Phrase d'accroche (HOOK)
-    - Profil
-    - Compétences
+Tu es un expert en optimisation ATS.
 
-    Ne modifier aucune autre section.
+Adapter uniquement :
+- Phrase d'accroche (HOOK)
+- Profil
+- Compétences
 
-    Offre :
-    {offer}
+IMPORTANT :
+- "hook" doit être UNE phrase simple.
+- "profile" doit être UN paragraphe simple.
+- Ne jamais renvoyer d'objet imbriqué.
+- Les valeurs doivent être des chaînes ou listes simples.
 
-    Retourner uniquement un JSON valide :
+Ne modifier aucune autre section.
 
-    {{
-      "hook": "...",
-      "profile": "...",
-      "skills": {{
-          "Analyse Structurale et Simulation": [...],
-          "Logiciels de Simulation": [...],
-          "Programmation et Outils": [...]
-      }}
-    }}
-    """
+Offre :
+{offer}
+
+Retourner STRICTEMENT ce format JSON :
+
+{{
+  "hook": "phrase simple",
+  "profile": "paragraphe simple",
+  "skills": {{
+      "Analyse Structurale et Simulation": ["...", "..."],
+      "Logiciels de Simulation": ["...", "..."],
+      "Programmation et Outils": ["...", "..."]
+  }}
+}}
+
+Ne rien ajouter avant ou après le JSON.
+"""
 
     data = {
         "model": "llama-3.1-8b-instant",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
+        "messages": [{"role": "user", "content": prompt}],
+        "response_format": {"type": "json_object"}
     }
 
     response = requests.post(
@@ -65,7 +74,7 @@ if st.button("Générer CV"):
     result = response.json()
 
     if "choices" not in result:
-        st.error("Réponse inattendue")
+        st.error("Réponse inattendue de Groq")
         st.write(result)
         st.stop()
 
@@ -74,15 +83,15 @@ if st.button("Générer CV"):
     try:
         result_json = json.loads(content)
     except:
-        st.error("Erreur parsing JSON")
+        st.error("Le modèle n'a pas renvoyé un JSON valide.")
         st.write(content)
         st.stop()
 
     # ======================
-    # GÉNÉRATION PDF SIMPLE
+    # GÉNÉRATION FICHIER TEXTE STABLE
     # ======================
 
-    pdf_text = f"""
+    cv_text = f"""
 ABDELKHALEK MNAOUER
 
 {result_json["hook"]}
@@ -94,12 +103,12 @@ COMPÉTENCES
 """
 
     for category, items in result_json["skills"].items():
-        pdf_text += f"\n{category}\n"
+        cv_text += f"\n{category}\n"
         for item in items:
-            pdf_text += f"- {item}\n"
+            cv_text += f"- {item}\n"
 
     buffer = BytesIO()
-    buffer.write(pdf_text.encode("utf-8"))
+    buffer.write(cv_text.encode("utf-8"))
     buffer.seek(0)
 
     st.download_button(
@@ -107,5 +116,3 @@ COMPÉTENCES
         buffer,
         file_name="CV_MNAOUER_Abdelkhalek.txt"
     )
-
-
